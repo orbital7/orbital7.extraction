@@ -3,8 +3,10 @@
 public interface IMicrosoftAccountEmailExtractorService
 {
     string GetAuthorizationUrl(
-        MicrosoftEntraIdAppConfig config);
+        MicrosoftEntraIdAppConfig config,
+        MicrosoftEntraIdAppExtractionTarget extractionTarget);
 
     Task<TokenInfo> GetAccessTokenAsync(
-        MicrosoftEntraIdAppConfig config);
+        MicrosoftEntraIdAppConfig config,
+        MicrosoftEntraIdAppExtractionTarget extractionTarget);
 }

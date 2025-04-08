@@ -2,8 +2,16 @@
 
 internal class Program
 {
-    static void Main(string[] args)
+    static internal async Task Main(string[] args)
     {
-        Console.WriteLine("Hello, World!");
+        bool unattendedExecution = false;
+        ScriptJobBase? scriptJob = null;
+
+        scriptJob = new Scripts.AlphaTemp();
+
+        await ScriptJobExecutionEngine.ExecuteAsync(
+            scriptJob,
+            unattendedExecution: unattendedExecution);
     }
 }
+
