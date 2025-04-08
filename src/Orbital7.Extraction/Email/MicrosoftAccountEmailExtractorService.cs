@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-
-namespace Orbital7.Extraction.Email;
+﻿namespace Orbital7.Extraction.Email;
 
 public class MicrosoftAccountEmailExtractorService(
     IHttpClientFactory httpClientFactory) :
@@ -34,7 +32,11 @@ public class MicrosoftAccountEmailExtractorService(
     private async Task<TokenInfo> GetInitialAccessTokenAsync(
         MicrosoftEntraIdAppConfig config)
     {
-        var tokenEndpoint = $"https://login.microsoftonline.com/{config.TenantId}/oauth2/v2.0/token";
+        // Validate.
+        ArgumentNullException.ThrowIfNull(config.ClientId, nameof(config.ClientId));
+        ArgumentNullException.ThrowIfNull(config.ClientSecret, nameof(config.ClientSecret));
+        ArgumentNullException.ThrowIfNull(config.AuthorizationCode, nameof(config.AuthorizationCode));
+        ArgumentNullException.ThrowIfNull(config.RedirectUri, nameof(config.RedirectUri));
 
         using (var client = _httpClientFactory.CreateClient())
         {
@@ -53,19 +55,19 @@ public class MicrosoftAccountEmailExtractorService(
                 requestBody);
 
             var responseContent = await response.Content.ReadAsStringAsync();
-            var tokenResponse = JObject.Parse(responseContent);
+            var tokenResponse = JsonSerializationHelper.DeserializeFromJson<OAuthTokenResponse>(responseContent);
 
-            return new TokenInfo()
-            {
-                AccessToken = tokenResponse["access_token"].ToString(),
-                RefreshToken = tokenResponse["refresh_token"].ToString(),
-            };
+            return ToTokenInfo(tokenResponse);
         }
     }
 
     private async Task<TokenInfo> RefreshAccessTokenAsync(
         MicrosoftEntraIdAppConfig config)
     {
+        ArgumentNullException.ThrowIfNull(config.ClientId, nameof(config.ClientId));
+        ArgumentNullException.ThrowIfNull(config.ClientSecret, nameof(config.ClientSecret));
+        ArgumentNullException.ThrowIfNull(config.RefreshToken, nameof(config.RefreshToken));
+
         using (var client = _httpClientFactory.CreateClient())
         {
             var requestBody = new FormUrlEncodedContent(new[]
@@ -82,13 +84,9 @@ public class MicrosoftAccountEmailExtractorService(
                 requestBody);
 
             var responseContent = await response.Content.ReadAsStringAsync();
-            var tokenResponse = JObject.Parse(responseContent);
+            var tokenResponse = JsonSerializationHelper.DeserializeFromJson<OAuthTokenResponse>(responseContent);
 
-            return new TokenInfo()
-            {
-                AccessToken = tokenResponse["access_token"].ToString(),
-                RefreshToken = tokenResponse["refresh_token"].ToString(),
-            };
+            return ToTokenInfo(tokenResponse);
         }
     }
 
@@ -96,5 +94,20 @@ public class MicrosoftAccountEmailExtractorService(
         MicrosoftEntraIdAppConfig config)
     {
         return $"https://login.microsoftonline.com/{config.TenantId}/oauth2/v2.0/token";
+    }
+
+    private TokenInfo ToTokenInfo(
+        OAuthTokenResponse? response)
+    {
+        ArgumentNullException.ThrowIfNull(response, nameof(response));
+        ArgumentNullException.ThrowIfNull(response.AccessToken, nameof(response.AccessToken));
+        ArgumentNullException.ThrowIfNull(response.ExpiresIn, nameof(response.ExpiresIn));
+
+        return new TokenInfo()
+        {
+            AccessToken = response.AccessToken,
+            AccessTokenExpirationDateTimeUtc = DateTime.UtcNow.AddSeconds(response.ExpiresIn.Value),
+            RefreshToken = response.RefreshToken,
+        };
     }
 }
