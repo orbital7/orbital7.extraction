@@ -40,7 +40,7 @@ public class MicrosoftAccountEmailExtractorService(
 
     public async Task<List<(string?, string?)>> GatherMessagesSenderSubjectAsync(
         MicrosoftEntraIdAppTokenInfo tokenInfo,
-        string folderPath,
+        string? folderPath,
         MicrosoftGraphMessagesQueryConfig queryConfig)
     {
         var summary = new List<(string?, string?)>();
@@ -64,7 +64,7 @@ public class MicrosoftAccountEmailExtractorService(
 
     public async Task ExecuteMessagesFolderQueryAsync(
         MicrosoftEntraIdAppTokenInfo tokenInfo,
-        string folderPath,
+        string? folderPath,
         MicrosoftGraphMessagesQueryConfig queryConfig,
         Func<Message, Task<bool>> messageIteratorHandler,
         Func<Task<bool>>? pageIteratorPausedHandler = null)
@@ -72,8 +72,11 @@ public class MicrosoftAccountEmailExtractorService(
         var graphClient = CreateGraphServiceClient(tokenInfo);
         var messagesCount = 0;
 
+        // Get the folder ID for the specified path.
+        var folderId = await GetFolderIdByPathAsync(graphClient, folderPath);
+
         // Search.
-        var messagesResponse = await graphClient.Me.MailFolders[folderPath].Messages
+        var messagesResponse = await graphClient.Me.MailFolders[folderId].Messages
             .GetAsync(requestConfig =>
             {
                 // Set the request query parameters.
@@ -167,6 +170,65 @@ public class MicrosoftAccountEmailExtractorService(
             }
         }
     }
+
+    private async Task<string> GetFolderIdByPathAsync(
+        GraphServiceClient graphClient,
+        string? folderPath)
+    {
+        string? currentFolderId = null;
+
+        // Continue if a folder path was specified.
+        if (folderPath.HasText())
+        {
+            // Split the path into segments
+            var folderNames = folderPath.Split(
+                ['\\', '/'],
+                StringSplitOptions.RemoveEmptyEntries);
+
+            // Continue if we have segments.
+            if (folderNames.Length > 0)
+            {
+                // Navigate through the folder hierarchy
+                for (int i = 0; i < folderNames.Length; i++)
+                {
+                    // Get the current segment.
+                    var folderName = folderNames[i];
+
+                    // Query subfolders of the current folder / root.
+                    var foldersResponse = currentFolderId.HasText() ?
+                        await graphClient.Me.MailFolders[currentFolderId].ChildFolders
+                            .GetAsync(
+                                (config) =>
+                                {
+                                    config.QueryParameters.Filter = $"displayName eq '{folderName}'";
+                                }) :
+                        await graphClient.Me.MailFolders
+                            .GetAsync(
+                                (config) =>
+                                {
+                                    config.QueryParameters.Filter = $"displayName eq '{folderName}'";
+                                });
+
+                    // Find the folder with the matching display name.
+                    var targetFolder = foldersResponse?.Value?.FirstOrDefault(
+                        x => string.Equals(
+                            x.DisplayName,
+                            folderName,
+                            StringComparison.OrdinalIgnoreCase));
+
+                    if (targetFolder == null)
+                        throw new Exception($"Could not find folder '{folderName}'");
+
+                    // Use this folder's ID for the next iteration.
+                    currentFolderId = targetFolder.Id;
+                }
+            }
+        }
+
+        // Default to inbox if no folder path specified.
+        return currentFolderId ?? "inbox";
+    }
+
 
     private async Task GetInitialAccessTokenAsync(
         MicrosoftEntraIdAppConfig config,

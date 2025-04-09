@@ -23,11 +23,7 @@ public class AlphaTemp :
         // Test gathering message headers.
         var messageHeaders = await emailExtractorService.GatherMessagesSenderSubjectAsync(
             emailExtractionTarget.TokenInfo,
-            "inbox",
-            new MicrosoftGraphMessagesQueryConfig
-            {
-                Top = 3,
-                Maximum = 10,
-            });
+            emailExtractionTarget.EmailExtractionAction.ExtractionFolderTargets.First().EmailAccountFolderPath,
+            new MicrosoftGraphMessagesQueryConfig());
     }
 }

@@ -14,13 +14,13 @@ public interface IMicrosoftAccountEmailExtractorService
 
     Task ExecuteMessagesFolderQueryAsync(
         MicrosoftEntraIdAppTokenInfo tokenInfo,
-        string folderPath,
+        string? folderPath,
         MicrosoftGraphMessagesQueryConfig queryConfig,
         Func<Message, Task<bool>> messageIteratorHandler,
         Func<Task<bool>>? pageIteratorHandler = null);
 
     Task<List<(string?, string?)>> GatherMessagesSenderSubjectAsync(
         MicrosoftEntraIdAppTokenInfo tokenInfo,
-        string folderPath,
+        string? folderPath,
         MicrosoftGraphMessagesQueryConfig queryConfig);
 }
