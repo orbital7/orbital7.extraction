@@ -14,13 +14,20 @@ public class AlphaTemp :
         // Get authorization URL (use in browser and copy/paste code into emailExtractionTarget.AuthorizationCode).
         //var authorizationUrl = emailExtractorService.GetAuthorizationUrl(config.EmailExtractionApp);
         
-        // Get access token and update it in user secrets.
-        var tokenInfo = await emailExtractorService.GetAccessTokenAsync(
+        // Update access token and save user secrets.
+        await emailExtractorService.UpdateAccessTokenAsync(
             config.EmailExtractionApp,
-            emailExtractionTarget);
-        emailExtractionTarget.TokenInfo = tokenInfo;
+            emailExtractionTarget.TokenInfo);
         ConfigurationHelper.WriteUserSecrets<ExtractionConfig, Program>(config);
 
-
+        // Test gathering message headers.
+        var messageHeaders = await emailExtractorService.GatherMessagesSenderSubjectAsync(
+            emailExtractionTarget.TokenInfo,
+            "inbox",
+            new MicrosoftGraphMessagesQueryConfig
+            {
+                Top = 3,
+                Maximum = 10,
+            });
     }
 }
