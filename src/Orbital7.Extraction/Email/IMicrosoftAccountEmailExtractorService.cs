@@ -19,8 +19,17 @@ public interface IMicrosoftAccountEmailExtractorService
         Func<Message, Task<bool>> messageIteratorHandler,
         Func<Task<bool>>? pageIteratorHandler = null);
 
-    Task<List<(string?, string?)>> GatherMessagesSenderSubjectAsync(
+    Task<List<(string?, string?)>> ExtractMessagesSenderSubjectAsync(
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
         MicrosoftGraphMessagesQueryConfig queryConfig);
+
+    Task<List<MessageContent>> ExtractMessagesContentAsync(
+        MicrosoftEntraIdAppTokenInfo tokenInfo,
+        string? folderPath,
+        MicrosoftGraphMessagesQueryConfig queryConfig);
+
+    Task<List<FileAttachment>> ExtractMessageFileAttachmentsAsync(
+        MicrosoftEntraIdAppTokenInfo tokenInfo,
+        string? messageId);
 }

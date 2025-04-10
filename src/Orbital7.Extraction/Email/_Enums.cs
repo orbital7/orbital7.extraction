@@ -4,3 +4,10 @@ public enum EmailExportAction
 {
     Pdf,
 }
+
+public enum EmailBodyContentType
+{
+    Html,
+
+    Text,
+}

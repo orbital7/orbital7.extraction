@@ -1,4 +1,5 @@
 ﻿using Orbital7.Extraction.Email;
+using Orbital7.Extraction.Pdf;
 
 namespace Orbital7.Extraction
 {
@@ -12,6 +13,9 @@ namespace Orbital7.Extraction
 
             // Email.
             services.AddScoped<IMicrosoftAccountEmailExtractorService, MicrosoftAccountEmailExtractorService>();
+
+            // Pdf.
+            services.AddScoped<IPdfExportService, PdfExportService>();
 
             return services;
         }

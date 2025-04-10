@@ -1,6 +1,7 @@
 ﻿using Microsoft.Graph;
 using Microsoft.Graph.Models;
 using Microsoft.Kiota.Abstractions.Authentication;
+using System.Text.RegularExpressions;
 
 namespace Orbital7.Extraction.Email;
 
@@ -38,28 +39,111 @@ public class MicrosoftAccountEmailExtractorService(
         }
     }
 
-    public async Task<List<(string?, string?)>> GatherMessagesSenderSubjectAsync(
+    public async Task<List<(string?, string?)>> ExtractMessagesSenderSubjectAsync(
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
         MicrosoftGraphMessagesQueryConfig queryConfig)
     {
-        var summary = new List<(string?, string?)>();
+        var messages = new List<(string?, string?)>();
 
-        // Ensure we're only selecting sender and subject.
+        // Limit selection to only what we need.
         queryConfig.Select = ["sender", "subject"];
 
         await ExecuteMessagesFolderQueryAsync(
             tokenInfo,
             folderPath,
             queryConfig,
-            (message) => // Message iterator handler.
+            (msg) => // Message iterator handler.
             {
                 // Add the summary and keep going.
-                summary.Add((message.Sender?.EmailAddress?.Address, message.Subject));
+                messages.Add((msg.Sender?.EmailAddress?.Address, msg.Subject));
                 return Task.FromResult(true);
             });
 
-        return summary;
+        return messages;
+    }
+
+    public async Task<List<MessageContent>> ExtractMessagesContentAsync(
+        MicrosoftEntraIdAppTokenInfo tokenInfo,
+        string? folderPath,
+        MicrosoftGraphMessagesQueryConfig queryConfig)
+    {
+        var messages = new List<MessageContent>();
+
+        // Limit selection to only what we need.
+        queryConfig.Select = ["sentdatetime", "sender", "subject", "body"];
+
+        await ExecuteMessagesFolderQueryAsync(
+            tokenInfo,
+            folderPath,
+            queryConfig,
+            async (msg) => // Message iterator handler.
+            {
+                var message = new MessageContent()
+                {
+                    Id = msg.Id,
+                    SentDateTimeUtc = msg.SentDateTime?.UtcDateTime,
+                    SenderName = msg.Sender?.EmailAddress?.Name,
+                    SenderEmail = msg.Sender?.EmailAddress?.Address,
+                    Subject = msg.Subject,
+                    Body = msg.Body?.Content,
+                    BodyContentType = 
+                        msg.Body != null ?
+                            msg.Body?.ContentType == BodyType.Html ?
+                                EmailBodyContentType.Html :
+                                EmailBodyContentType.Text :
+                            null,
+                };
+
+                // If configured, for HTML messages, extract the inline image attachments and
+                // embed them into the body.
+                if (queryConfig.DownloadAttachments && 
+                    message.BodyContentType == EmailBodyContentType.Html)
+                {
+                    var attachments = await ExtractMessageFileAttachmentsAsync(tokenInfo, msg.Id);
+                    EmbedInlineImageAttachmentsIntoBody(message, attachments);
+                }
+
+                messages.Add(message);
+
+                return true;
+            });
+
+        return messages;
+    }
+
+    private void EmbedInlineImageAttachmentsIntoBody(
+        MessageContent message,
+        List<FileAttachment> attachments)
+    {
+        if (message.Body.HasText() && 
+            message.BodyContentType == EmailBodyContentType.Html)
+        {
+            var inlineAttachments = attachments
+                .Where(att => 
+                    att.IsInline == true && 
+                    att.ContentId != null && 
+                    att.ContentBytes != null)
+                .ToDictionary(att => att.ContentId!, att => att);
+
+            if (inlineAttachments.Count > 0)
+            {
+                var updatedHtml = Regex.Replace(message.Body, @"<img[^>]*src=[""']cid:(.+?)[""'][^>]*>", match =>
+                {
+                    var cid = match.Groups[1].Value;
+                    if (inlineAttachments.TryGetValue(cid, out var fileAttachment))
+                    {
+                        string mimeType = fileAttachment.ContentType ?? "image/png"; // fallback
+                        string base64 = Convert.ToBase64String(fileAttachment.ContentBytes!);
+                        string dataUri = $"data:{mimeType};base64,{base64}";
+                        return match.Value.Replace($"cid:{cid}", dataUri);
+                    }
+                    return match.Value; // fallback to original if not found
+                }, RegexOptions.IgnoreCase);
+
+                message.Body = updatedHtml;
+            }
+        }
     }
 
     public async Task ExecuteMessagesFolderQueryAsync(
@@ -169,6 +253,43 @@ public class MicrosoftAccountEmailExtractorService(
                 }
             }
         }
+    }
+
+    public async Task<List<FileAttachment>> ExtractMessageFileAttachmentsAsync(
+        MicrosoftEntraIdAppTokenInfo tokenInfo,
+        string? messageId)
+    {
+        var attachments = new List<FileAttachment>();
+        var graphClient = CreateGraphServiceClient(tokenInfo);
+
+        // Execute.
+        if (messageId.HasText())
+        {
+            var attachmentsResponse = await graphClient.Me.Messages[messageId].Attachments
+                .GetAsync();
+
+            // Continue if we have attachments.
+            if (attachmentsResponse != null)
+            {
+                var pageIterator = PageIterator<Attachment, AttachmentCollectionResponse>
+                    .CreatePageIterator(
+                        graphClient,
+                        attachmentsResponse,
+                        (attachment) =>
+                        {
+                            if (attachment is FileAttachment fileAttachment)
+                            {
+                                attachments.Add(fileAttachment);
+                            }
+
+                            return true;
+                        });
+
+                await pageIterator.IterateAsync();
+            }
+        }
+
+        return attachments;
     }
 
     private async Task<string> GetFolderIdByPathAsync(

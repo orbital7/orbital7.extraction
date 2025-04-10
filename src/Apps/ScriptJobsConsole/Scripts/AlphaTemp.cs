@@ -7,6 +7,7 @@ public class AlphaTemp :
     {
         var config = ExtractionConfig.Load<Program>();
         var emailExtractionTarget = config.EmailExtractionTargets.First();
+        var extractionFolderTarget = emailExtractionTarget.EmailExtractionAction.ExtractionFolderTargets.First();
 
         var serviceProvider = ExtractionServicesFactory.CreateServiceProvider();
         var emailExtractorService = serviceProvider.GetRequiredService<IMicrosoftAccountEmailExtractorService>();
@@ -20,10 +21,23 @@ public class AlphaTemp :
             emailExtractionTarget.TokenInfo);
         ConfigurationHelper.WriteUserSecrets<ExtractionConfig, Program>(config);
 
-        // Test gathering message headers.
-        var messageHeaders = await emailExtractorService.GatherMessagesSenderSubjectAsync(
+        // Extract messages.
+        var messages = await emailExtractorService.ExtractMessagesContentAsync(
             emailExtractionTarget.TokenInfo,
-            emailExtractionTarget.EmailExtractionAction.ExtractionFolderTargets.First().EmailAccountFolderPath,
-            new MicrosoftGraphMessagesQueryConfig());
+            extractionFolderTarget.EmailAccountFolderPath,
+            new MicrosoftGraphMessagesQueryConfig()
+            {
+                Orderby = ["receivedDateTime ASC"],
+            });
+
+        // Export to PDF.
+        var pdfExportService = serviceProvider.GetRequiredService<IPdfExportService>();
+        var exportFilePath = Path.Combine(
+            emailExtractionTarget.EmailExtractionAction.ExportFolderPath ?? throw new ArgumentNullException(),
+            extractionFolderTarget.OutputFilename + ".pdf");
+        await pdfExportService.ExportToPdfFileAsync(
+            new MessageContentPdfWriter(),
+            messages,
+            exportFilePath);
     }
 }
