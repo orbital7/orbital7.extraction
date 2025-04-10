@@ -3,7 +3,12 @@
 public class MicrosoftEntraIdAppTokenInfo :
     TokenInfo
 {
+    // This should be "common" for personal Microsoft accounts
+    // or the tenant ID for work accounts.
     public string? AccountLoginEndpoint { get; set; }
 
+    // This should be the code the the user received after 
+    // authorizing the app (it will be in the redirect URL as the
+    // "code" query parameter).
     public string? AuthorizationCode { get; set; }
 }

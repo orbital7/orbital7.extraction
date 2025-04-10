@@ -10,6 +10,7 @@ public class PdfExportService :
         List<T> contentItems,
         string exportFilePath)
     {
+        // Bouncy Castle FTW.
         Environment.SetEnvironmentVariable(
             "ITEXT_BOUNCY_CASTLE_FACTORY_NAME", 
             "bouncy-castle");
@@ -20,12 +21,8 @@ public class PdfExportService :
 
         // Loop through the content items and use the export processor
         // to generate PDF content to write.
-        var i = 0;
         foreach (var contentItem in contentItems)
         {
-            i++;
-            Console.WriteLine($"Processing {i} of {contentItems.Count}");
-
             await pdfContentWriter.WriteContentAsync(
                 contentItem,
                 pdfDocument);

@@ -2,9 +2,11 @@
 
 public class ExtractionConfig
 {
-    public MicrosoftEntraIdAppConfig EmailExtractionApp { get; set; } = new();
+    public MicrosoftEntraIdAppConfig EmailExtractionAppConfig { get; set; } = new();
 
-    public List<MicrosoftEntraIdAppExtractionTarget> EmailExtractionTargets { get; set; } = new();
+    public MicrosoftEntraIdAppTokenInfo EmailExtractionAppTokenInfo { get; set; } = new();
+
+    public List<EmailExtractionExportTarget> EmailExtractionTargets { get; set; } = new();
 
     public static ExtractionConfig Load<TAssemblyClass>(
         string? environmentVariableName = null)

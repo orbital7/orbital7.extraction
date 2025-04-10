@@ -1,6 +1,6 @@
 ﻿namespace Orbital7.Extraction.Email;
 
-public class EmailExtractionAction
+public class EmailExtractionExportTarget
 {
     public EmailExportAction ExportAction { get; set; }
 

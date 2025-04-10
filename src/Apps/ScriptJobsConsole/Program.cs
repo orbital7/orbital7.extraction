@@ -7,7 +7,7 @@ internal class Program
         bool unattendedExecution = false;
         ScriptJobBase? scriptJob = null;
 
-        scriptJob = new Scripts.AlphaTemp();
+        scriptJob = new Scripts.ExtractPerConfig();
 
         await ScriptJobExecutionEngine.ExecuteAsync(
             scriptJob,
