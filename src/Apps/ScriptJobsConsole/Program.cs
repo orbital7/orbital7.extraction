@@ -9,7 +9,7 @@ internal class Program
 
         scriptJob = new Scripts.ExtractPerConfig();
 
-        await ScriptJobExecutionEngine.ExecuteAsync(
+        await ScriptJobRunner.ExecuteAsync(
             scriptJob,
             unattendedExecution: unattendedExecution);
     }
