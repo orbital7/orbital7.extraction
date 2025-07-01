@@ -408,9 +408,18 @@ public class MicrosoftAccountEmailExtractorService(
                 requestBody);
 
             var responseContent = await response.Content.ReadAsStringAsync();
-            var tokenResponse = JsonSerializationHelper.DeserializeFromJson<OAuthTokenResponse>(responseContent);
+            if (responseContent.StartsWith("{\"error\":"))
+            {
+                var errorResponse = JsonSerializationHelper.DeserializeFromJson<ErrorResponse>(responseContent);
+                throw new Exception($"Error ({errorResponse.Error}): {errorResponse.ErrorDescription}");
+            }
+            else
+            {
+                response.EnsureSuccessStatusCode();
 
-            UpdateTokenInfo(tokenInfo, tokenResponse);
+                var tokenResponse = JsonSerializationHelper.DeserializeFromJson<OAuthTokenResponse>(responseContent);
+                UpdateTokenInfo(tokenInfo, tokenResponse);
+            }
         }
     }
 

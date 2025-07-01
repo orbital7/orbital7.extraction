@@ -9,9 +9,11 @@ public class ExtractPerConfig :
         var serviceProvider = ExtractionServicesFactory.CreateServiceProvider();
         var emailExtractorService = serviceProvider.GetRequiredService<IMicrosoftAccountEmailExtractorService>();
 
-        // Get authorization URL (use in browser and copy/paste code into emailExtractionTarget.AuthorizationCode).
-        //var authorizationUrl = emailExtractorService.GetAuthorizationUrl(config.EmailExtractionApp);
-        
+        // Get authorization URL (use in browser and copy/paste code into EmailExtractionAppTokenInfo.AuthorizationCode).
+        //var authorizationUrl = emailExtractorService.GetAuthorizationUrl(
+        //  config.EmailExtractionAppConfig,
+        //  config.EmailExtractionAppTokenInfo);
+
         // Update access token and save user secrets.
         await emailExtractorService.UpdateAccessTokenAsync(
             config.EmailExtractionAppConfig,

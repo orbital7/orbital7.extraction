@@ -1,5 +1,4 @@
-﻿
-namespace Orbital7.Extraction.Email;
+﻿namespace Orbital7.Extraction.Email;
 
 public class MessageContent
 {
