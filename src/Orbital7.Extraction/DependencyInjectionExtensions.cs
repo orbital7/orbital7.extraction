@@ -20,6 +20,7 @@ namespace Orbital7.Extraction
 
             // Pdf.
             services.AddScoped<IPdfExportService, PdfExportService>();
+            services.AddScoped<IPdfExtractorService, PdfExtractorService>();
 
             return services;
         }
