@@ -1,6 +1,7 @@
 ﻿using iText.Html2pdf;
 using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Event;
+using iText.Kernel.Pdf.Navigation;
 using iText.Layout.Element;
 using iText.Layout.Properties;
 using iText.StyledXmlParser.Resolver.Resource;
@@ -26,6 +27,21 @@ public class MessageContentPdfWriter :
         // Read the temporary PDF file in and append to the main PDF.
         using var pdfReader = new PdfReader(tempPdfFilePath);
         using var pdfContent = new PdfDocument(pdfReader);
+
+        // Determine the starting page for the copied content.
+        int startPage = pdfDocument.GetNumberOfPages() - pdfContent.GetNumberOfPages() + 1;
+
+        // Create a root outline if it doesn't exist.
+        var rootOutline = pdfDocument.GetOutlines(false);
+        if (rootOutline == null)
+        {
+            rootOutline = pdfDocument.GetOutlines(true);
+        }
+
+        // Add a bookmark (outline) pointing to the start of the copied pages.
+        string outlineTitle = $"{contentItem.SentDateTimeUtc?.ToLocalTime().ToDefaultDateTimeString()}: {contentItem.Subject}";
+        var outline = rootOutline.AddOutline(outlineTitle);
+        outline.AddDestination(PdfExplicitDestination.CreateFit(pdfDocument.GetPage(startPage)));
 
         // Copy over the pages.
         pdfContent.CopyPagesTo(1, pdfContent.GetNumberOfPages(), pdfDocument);
