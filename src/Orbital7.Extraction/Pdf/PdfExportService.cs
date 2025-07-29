@@ -1,4 +1,6 @@
-﻿using iText.Kernel.Pdf;
+﻿using Syncfusion.Drawing;
+using Syncfusion.Pdf;
+using Syncfusion.Pdf.Interactive;
 
 namespace Orbital7.Extraction.Pdf;
 
@@ -10,24 +12,37 @@ public class PdfExportService :
         List<T> contentItems,
         string exportFilePath)
     {
-        // Bouncy Castle FTW.
-        Environment.SetEnvironmentVariable(
-            "ITEXT_BOUNCY_CASTLE_FACTORY_NAME", 
-            "bouncy-castle");
-
-        // Create the main PDF at the specified export path.
-        using var pdfWriter = new PdfWriter(exportFilePath);
-        using var pdfDocument = new PdfDocument(pdfWriter);
-
-        // Loop through the content items and use the export processor
-        // to generate PDF content to write.
-        foreach (var contentItem in contentItems)
+        using (PdfDocument pdfDocument = new PdfDocument())
         {
-            await pdfContentWriter.WriteContentAsync(
-                contentItem,
-                pdfDocument);
-        }
+            // Loop through the content items and use the export processor
+            // to generate PDF content to write.
+            foreach (var contentItem in contentItems)
+            {
+                int nextPage = pdfDocument.Pages.Count;
 
-        pdfDocument.Close();
+                // Extract the content to a PDF stream.
+                var pdfContentStream = await pdfContentWriter.WriteContentAsync(
+                    contentItem);
+
+                // Merge it into the current PDF document.
+                PdfDocumentBase.Merge(pdfDocument, pdfContentStream);
+
+                // Create the bookmark for the content item.
+                PdfBookmark bookmark = pdfDocument.Bookmarks.Add(pdfContentWriter.GetContentTitle(contentItem));
+                //Sets the destination page.
+                bookmark.Destination = new PdfDestination(pdfDocument.Pages[nextPage]);
+                //Sets the destination location.
+                bookmark.Destination.Location = new PointF(0, 0);
+                //Sets the text style and color.
+                bookmark.TextStyle = PdfTextStyle.Bold;
+                bookmark.Color = Color.Red;
+
+                Console.Write(".");
+            }
+
+            // Save and close.
+            pdfDocument.Save(exportFilePath);
+            pdfDocument.Close(true);
+        }
     }
 }

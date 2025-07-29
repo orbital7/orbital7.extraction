@@ -2,6 +2,8 @@
 
 public class ExtractionConfig
 {
+    public string? SyncfusionLicenseKey { get; set; }
+
     public MicrosoftEntraIdAppConfig EmailExtractionAppConfig { get; set; } = new();
 
     public MicrosoftEntraIdAppTokenInfo EmailExtractionAppTokenInfo { get; set; } = new();

@@ -7,8 +7,15 @@ namespace Orbital7.Extraction
     public static class DependencyInjectionExtensions
     {
         public static IServiceCollection AddExtractionServices(
-            this IServiceCollection services)
+            this IServiceCollection services,
+            string? syncFusionLicenseKey)
         {
+            // Licensing.
+            if (syncFusionLicenseKey.HasText())
+            {
+                Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(syncFusionLicenseKey);
+            }
+
             // Prerequisites.
             services.AddHttpClient();
 

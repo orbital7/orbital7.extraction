@@ -3,6 +3,8 @@
 public enum EmailExportAction
 {
     Pdf,
+
+    Csv,
 }
 
 public enum EmailBodyContentType

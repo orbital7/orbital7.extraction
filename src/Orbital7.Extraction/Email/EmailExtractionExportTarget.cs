@@ -2,7 +2,7 @@
 
 public class EmailExtractionExportTarget
 {
-    public EmailExportAction ExportAction { get; set; }
+    public List<EmailExportAction> ExportActions { get; set; } = new();
 
     public string? ExportFolderPath { get; set; }
 
