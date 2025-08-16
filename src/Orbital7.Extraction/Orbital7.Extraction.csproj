@@ -8,10 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Graph" Version="5.86.0" />
-    <PackageReference Include="Orbital7.Extensions" Version="9.0.21" />
-    <PackageReference Include="Syncfusion.HtmlToPdfConverter.Net.Windows" Version="30.1.41" />
-    <PackageReference Include="Syncfusion.Pdf.Net.Core" Version="30.1.41" />
+    <PackageReference Include="Microsoft.Graph" Version="5.90.0" />
+    <PackageReference Include="Orbital7.Extensions" Version="9.0.22" />
+    <PackageReference Include="Syncfusion.HtmlToPdfConverter.Net.Windows" Version="30.2.5" />
+    <PackageReference Include="Syncfusion.Pdf.Net.Core" Version="30.2.5" />
   </ItemGroup>
 
 </Project>
