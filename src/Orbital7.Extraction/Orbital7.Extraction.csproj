@@ -1,17 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 	<LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Graph" Version="5.91.0" />
-    <PackageReference Include="Orbital7.Extensions" Version="9.0.23" />
-    <PackageReference Include="Syncfusion.HtmlToPdfConverter.Net.Windows" Version="31.1.18" />
-    <PackageReference Include="Syncfusion.Pdf.Net.Core" Version="31.1.18" />
+    <PackageReference Include="Microsoft.Graph" Version="5.97.0" />
+    <PackageReference Include="Orbital7.Extensions" Version="10.0.0" />
+    <PackageReference Include="Syncfusion.HtmlToPdfConverter.Net.Windows" Version="31.2.15" />
+    <PackageReference Include="Syncfusion.Pdf.Net.Core" Version="31.2.15" />
   </ItemGroup>
 
 </Project>

@@ -26,8 +26,8 @@ public class MessageContentPdfWriter :
 
         // Convert URL to PDF document.
         var pdfDocument = htmlConverter.Convert(
-            contentItem.Body,
-            null);
+            contentItem.Body ?? String.Empty,
+            String.Empty);
 
         // Draw a heading at the top of the first page.
         var page = pdfDocument.Pages[0];

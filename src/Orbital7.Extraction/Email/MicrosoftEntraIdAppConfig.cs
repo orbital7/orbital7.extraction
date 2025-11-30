@@ -1,10 +1,10 @@
 ﻿namespace Orbital7.Extraction.Email;
 
-public class MicrosoftEntraIdAppConfig
+public record MicrosoftEntraIdAppConfig
 {
-    public string? ClientId { get; set; }
+    public string ClientId { get; init; } = string.Empty;
 
-    public string? ClientSecret { get; set; }
+    public string ClientSecret { get; init; } = string.Empty;
 
-    public string? RedirectUri { get; set; }
+    public string RedirectUri { get; init; } = string.Empty;
 }

@@ -16,13 +16,7 @@ public class ExtractPerConfig :
         //var authorizationUrl = emailExtractorService.GetAuthorizationUrl(
         //  config.EmailExtractionAppConfig,
         //  config.EmailExtractionAppTokenInfo);
-
-        // Update access token and save user secrets.
-        await emailExtractorService.UpdateAccessTokenAsync(
-            config.EmailExtractionAppConfig,
-            config.EmailExtractionAppTokenInfo);
-        ConfigurationHelper.WriteUserSecrets<ExtractionConfig, Program>(config);
-
+        
         // Prepare to export targets.
         int i = 0;
         int total = config.EmailExtractionTargets.Sum(x => x.ExtractionFolderTargets.Count);
@@ -44,11 +38,17 @@ public class ExtractPerConfig :
 
                     // Extract messages.
                     var messages = await emailExtractorService.ExtractMessagesContentAsync(
+                        config.EmailExtractionAppConfig,
                         config.EmailExtractionAppTokenInfo,
                         folderTarget.EmailAccountFolderPath,
                         new MicrosoftGraphMessagesQueryConfig()
                         {
                             Orderby = ["receivedDateTime ASC"],
+                        },
+                        onTokenInfoUpdated: (serviceProvider, tokenInfo) =>
+                        {
+                            ConfigurationHelper.WriteUserSecrets<ExtractionConfig, Program>(config);
+                            return Task.CompletedTask;
                         });
 
                     Console.WriteLine($"done ({messages.Count} extracted)");

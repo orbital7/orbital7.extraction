@@ -6,43 +6,32 @@ using System.Text.RegularExpressions;
 namespace Orbital7.Extraction.Email;
 
 public class MicrosoftAccountEmailExtractorService(
+    IServiceProvider serviceProvider,
     IHttpClientFactory httpClientFactory) :
     IMicrosoftAccountEmailExtractorService
 {
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
 
     public string GetAuthorizationUrl(
-        MicrosoftEntraIdAppConfig config,
+        MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo)
     {
-        // Specify offline_access to get a refresh token.
-        const string SCOPES = "user.read mail.read offline_access";
+        var client = new MicrosoftEntraIdAppOAuthClient(
+            _serviceProvider,
+            _httpClientFactory,
+            appConfig,
+            tokenInfo);
 
-        return $"{GetOAuthAuthorizeUrl(tokenInfo.AccountLoginEndpoint)}?" +
-            $"client_id={config.ClientId}&" +
-            $"response_type=code&" +
-            $"redirect_uri={config.RedirectUri}&" +
-            $"response_mode=query&scope={SCOPES}";
-    }
-
-    public async Task UpdateAccessTokenAsync(
-        MicrosoftEntraIdAppConfig config,
-        MicrosoftEntraIdAppTokenInfo tokenInfo)
-    {
-        if (tokenInfo.RefreshToken.HasText())
-        {
-            await RefreshAccessTokenAsync(config, tokenInfo);
-        }
-        else
-        {
-            await GetInitialAccessTokenAsync(config, tokenInfo);
-        }
+        return client.GetAuthorizationUrl();
     }
 
     public async Task<List<(string?, string?)>> ExtractMessagesSenderSubjectAsync(
+        MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
-        MicrosoftGraphMessagesQueryConfig queryConfig)
+        MicrosoftGraphMessagesQueryConfig queryConfig,
+        Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, Task>? onTokenInfoUpdated = null)
     {
         var messages = new List<(string?, string?)>();
 
@@ -50,6 +39,7 @@ public class MicrosoftAccountEmailExtractorService(
         queryConfig.Select = ["sender", "subject"];
 
         await ExecuteMessagesFolderQueryAsync(
+            appConfig,
             tokenInfo,
             folderPath,
             queryConfig,
@@ -58,15 +48,18 @@ public class MicrosoftAccountEmailExtractorService(
                 // Add the summary and keep going.
                 messages.Add((msg.Sender?.EmailAddress?.Address, msg.Subject));
                 return Task.FromResult(true);
-            });
+            },
+            onTokenInfoUpdated: onTokenInfoUpdated);
 
         return messages;
     }
 
     public async Task<List<MessageContent>> ExtractMessagesContentAsync(
+        MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
-        MicrosoftGraphMessagesQueryConfig queryConfig)
+        MicrosoftGraphMessagesQueryConfig queryConfig,
+        Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, Task>? onTokenInfoUpdated = null)
     {
         var messages = new List<MessageContent>();
 
@@ -74,6 +67,7 @@ public class MicrosoftAccountEmailExtractorService(
         queryConfig.Select = ["sentdatetime", "sender", "subject", "body"];
 
         await ExecuteMessagesFolderQueryAsync(
+            appConfig,
             tokenInfo,
             folderPath,
             queryConfig,
@@ -100,14 +94,15 @@ public class MicrosoftAccountEmailExtractorService(
                 if (queryConfig.DownloadAttachments && 
                     message.BodyContentType == EmailBodyContentType.Html)
                 {
-                    var attachments = await ExtractMessageFileAttachmentsAsync(tokenInfo, msg.Id);
+                    var attachments = await ExtractMessageFileAttachmentsAsync(appConfig, tokenInfo, msg.Id);
                     EmbedInlineImageAttachmentsIntoBody(message, attachments);
                 }
 
                 messages.Add(message);
 
                 return true;
-            });
+            },
+            onTokenInfoUpdated: onTokenInfoUpdated);
 
         return messages;
     }
@@ -147,13 +142,15 @@ public class MicrosoftAccountEmailExtractorService(
     }
 
     public async Task ExecuteMessagesFolderQueryAsync(
+        MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
         MicrosoftGraphMessagesQueryConfig queryConfig,
         Func<Message, Task<bool>> messageIteratorHandler,
-        Func<Task<bool>>? pageIteratorPausedHandler = null)
+        Func<Task<bool>>? pageIteratorPausedHandler = null,
+        Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, Task>? onTokenInfoUpdated = null)
     {
-        var graphClient = CreateGraphServiceClient(tokenInfo);
+        var graphClient = await CreateGraphServiceClientAsync(appConfig, tokenInfo, onTokenInfoUpdated);
         var messagesCount = 0;
 
         // Get the folder ID for the specified path.
@@ -256,11 +253,13 @@ public class MicrosoftAccountEmailExtractorService(
     }
 
     public async Task<List<FileAttachment>> ExtractMessageFileAttachmentsAsync(
+        MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
-        string? messageId)
+        string? messageId,
+        Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, Task>? onTokenInfoUpdated = null)
     {
         var attachments = new List<FileAttachment>();
-        var graphClient = CreateGraphServiceClient(tokenInfo);
+        var graphClient = await CreateGraphServiceClientAsync(appConfig, tokenInfo, onTokenInfoUpdated);
 
         // Execute.
         if (messageId.HasText())
@@ -350,119 +349,22 @@ public class MicrosoftAccountEmailExtractorService(
         return currentFolderId ?? "inbox";
     }
 
-
-    private async Task GetInitialAccessTokenAsync(
-        MicrosoftEntraIdAppConfig config,
-        MicrosoftEntraIdAppTokenInfo tokenInfo)
-    {
-        // Validate.
-        ArgumentNullException.ThrowIfNull(config.ClientId, nameof(config.ClientId));
-        ArgumentNullException.ThrowIfNull(config.ClientSecret, nameof(config.ClientSecret));
-        ArgumentNullException.ThrowIfNull(config.RedirectUri, nameof(config.RedirectUri));
-        ArgumentNullException.ThrowIfNull(tokenInfo.AuthorizationCode, nameof(tokenInfo.AuthorizationCode));
-
-        using (var client = _httpClientFactory.CreateClient())
-        {
-            var requestBody = new FormUrlEncodedContent(new[]
-            {
-                new KeyValuePair<string, string>("client_id", config.ClientId),
-                new KeyValuePair<string, string>("scope", "https://graph.microsoft.com/.default"),
-                new KeyValuePair<string, string>("code", tokenInfo.AuthorizationCode),
-                new KeyValuePair<string, string>("redirect_uri", config.RedirectUri),
-                new KeyValuePair<string, string>("grant_type", "authorization_code"),
-                new KeyValuePair<string, string>("client_secret", config.ClientSecret)
-            });
-
-            var response = await client.PostAsync(
-                GetOAuthTokenUrl(tokenInfo.AccountLoginEndpoint), 
-                requestBody);
-
-            var responseContent = await response.Content.ReadAsStringAsync();
-            var tokenResponse = JsonSerializationHelper.DeserializeFromJson<OAuthTokenResponse>(responseContent);
-
-            UpdateTokenInfo(tokenInfo, tokenResponse);
-        }
-    }
-
-    private async Task RefreshAccessTokenAsync(
-        MicrosoftEntraIdAppConfig config,
-        MicrosoftEntraIdAppTokenInfo tokenInfo)
-    {
-        ArgumentNullException.ThrowIfNull(config.ClientId, nameof(config.ClientId));
-        ArgumentNullException.ThrowIfNull(config.ClientSecret, nameof(config.ClientSecret));
-        ArgumentNullException.ThrowIfNull(tokenInfo.RefreshToken, nameof(tokenInfo.RefreshToken));
-
-        using (var client = _httpClientFactory.CreateClient())
-        {
-            var requestBody = new FormUrlEncodedContent(new[]
-            {
-                new KeyValuePair<string, string>("client_id", config.ClientId),
-                new KeyValuePair<string, string>("scope", "https://graph.microsoft.com/.default"),
-                new KeyValuePair<string, string>("refresh_token", tokenInfo.RefreshToken),
-                new KeyValuePair<string, string>("grant_type", "refresh_token"),
-                new KeyValuePair<string, string>("client_secret", config.ClientSecret)
-            });
-
-            var response = await client.PostAsync(
-                GetOAuthTokenUrl(tokenInfo.AccountLoginEndpoint), 
-                requestBody);
-
-            var responseContent = await response.Content.ReadAsStringAsync();
-            if (responseContent.StartsWith("{\"error\":"))
-            {
-                var errorResponse = JsonSerializationHelper.DeserializeFromJson<ErrorResponse>(responseContent);
-                throw new Exception($"Error ({errorResponse.Error}): {errorResponse.ErrorDescription}");
-            }
-            else
-            {
-                response.EnsureSuccessStatusCode();
-
-                var tokenResponse = JsonSerializationHelper.DeserializeFromJson<OAuthTokenResponse>(responseContent);
-                UpdateTokenInfo(tokenInfo, tokenResponse);
-            }
-        }
-    }
-
-    private string GetOAuthAuthorizeUrl(
-        string? accountLoginEndpoint)
-    {
-        return $"{GetOAuthUrl(accountLoginEndpoint)}/authorize";
-    }
-
-    private string GetOAuthTokenUrl(
-        string? accountLoginEndpoint)
-    {
-        return $"{GetOAuthUrl(accountLoginEndpoint)}/token";
-    }
-
-    private string GetOAuthUrl(
-        string? accountLoginEndpoint)
-    {
-        return $"https://login.microsoftonline.com/{accountLoginEndpoint}/oauth2/v2.0";
-    }
-
-    private void UpdateTokenInfo(
+    private async Task<GraphServiceClient> CreateGraphServiceClientAsync(
+        MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
-        OAuthTokenResponse? response)
+        Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, Task>? onTokenInfoUpdated)
     {
-        ArgumentNullException.ThrowIfNull(response, nameof(response));
-        ArgumentNullException.ThrowIfNull(response.AccessToken, nameof(response.AccessToken));
-        ArgumentNullException.ThrowIfNull(response.ExpiresIn, nameof(response.ExpiresIn));
-
-        // Update access token.
-        tokenInfo.AccessToken = response.AccessToken;
-        tokenInfo.AccessTokenExpirationDateTimeUtc = DateTime.UtcNow.AddSeconds(response.ExpiresIn.Value);
-
-        // Ensure we have a refresh token by coping over the existing token if the one returned
-        // from the response is null.
-        tokenInfo.RefreshToken = response.RefreshToken ?? tokenInfo.RefreshToken;
-    }
-
-    private GraphServiceClient CreateGraphServiceClient(
-        MicrosoftEntraIdAppTokenInfo tokenInfo)
-    {
+        // Create the OAuth client and ensure we have a valid access token.
+        var oAuthClient = new MicrosoftEntraIdAppOAuthClient(
+            _serviceProvider,
+            _httpClientFactory,
+            appConfig,
+            tokenInfo,
+            onTokenInfoUpdated: onTokenInfoUpdated);
+        await oAuthClient.EnsureValidAccessTokenAsync();
         ArgumentNullException.ThrowIfNull(tokenInfo.AccessToken, nameof(tokenInfo.AccessToken));
 
+        // Create the graph service client.
         return new GraphServiceClient(
             new BaseBearerTokenAuthenticationProvider(
                 new TokenProvider()
