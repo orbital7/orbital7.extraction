@@ -12,7 +12,7 @@ public class MicrosoftEntraIdAppOAuthClient :
         IHttpClientFactory httpClientFactory,
         MicrosoftEntraIdAppConfig config,
         MicrosoftEntraIdAppTokenInfo tokenInfo, 
-        Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, Task>? onTokenInfoUpdated = null, 
+        Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null, 
         string? httpClientName = null) : 
         base(
             serviceProvider, 

@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/Apps/">
+    <Project Path="Apps/ScriptJobsConsole/ScriptJobsConsole.csproj" />
+  </Folder>
+  <Project Path="Orbital7.Extraction/Orbital7.Extraction.csproj" />
+</Solution>

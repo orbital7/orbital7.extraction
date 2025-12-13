@@ -31,7 +31,7 @@ public class MicrosoftAccountEmailExtractorService(
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
         MicrosoftGraphMessagesQueryConfig queryConfig,
-        Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, Task>? onTokenInfoUpdated = null)
+        Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null)
     {
         var messages = new List<(string?, string?)>();
 
@@ -59,7 +59,7 @@ public class MicrosoftAccountEmailExtractorService(
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
         MicrosoftGraphMessagesQueryConfig queryConfig,
-        Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, Task>? onTokenInfoUpdated = null)
+        Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null)
     {
         var messages = new List<MessageContent>();
 
@@ -148,7 +148,7 @@ public class MicrosoftAccountEmailExtractorService(
         MicrosoftGraphMessagesQueryConfig queryConfig,
         Func<Message, Task<bool>> messageIteratorHandler,
         Func<Task<bool>>? pageIteratorPausedHandler = null,
-        Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, Task>? onTokenInfoUpdated = null)
+        Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null)
     {
         var graphClient = await CreateGraphServiceClientAsync(appConfig, tokenInfo, onTokenInfoUpdated);
         var messagesCount = 0;
@@ -256,7 +256,7 @@ public class MicrosoftAccountEmailExtractorService(
         MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? messageId,
-        Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, Task>? onTokenInfoUpdated = null)
+        Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null)
     {
         var attachments = new List<FileAttachment>();
         var graphClient = await CreateGraphServiceClientAsync(appConfig, tokenInfo, onTokenInfoUpdated);
@@ -352,24 +352,25 @@ public class MicrosoftAccountEmailExtractorService(
     private async Task<GraphServiceClient> CreateGraphServiceClientAsync(
         MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
-        Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, Task>? onTokenInfoUpdated)
+        Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated)
     {
-        // Create the OAuth client and ensure we have a valid access token.
+        // Create the OAuth client to use to manage the access token.
         var oAuthClient = new MicrosoftEntraIdAppOAuthClient(
             _serviceProvider,
             _httpClientFactory,
             appConfig,
             tokenInfo,
             onTokenInfoUpdated: onTokenInfoUpdated);
-        await oAuthClient.EnsureValidAccessTokenAsync();
-        ArgumentNullException.ThrowIfNull(tokenInfo.AccessToken, nameof(tokenInfo.AccessToken));
 
-        // Create the graph service client.
+        // Ensure we have a valid access token.
+        var accessToken = await oAuthClient.EnsureValidAccessTokenAsync();
+
+        // Create the graph service client using the access token.
         return new GraphServiceClient(
             new BaseBearerTokenAuthenticationProvider(
                 new TokenProvider()
                 {
-                    Token = tokenInfo.AccessToken,
+                    Token = accessToken,
                 }));
     }
 

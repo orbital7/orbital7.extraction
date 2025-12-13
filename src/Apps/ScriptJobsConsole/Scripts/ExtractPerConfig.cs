@@ -45,7 +45,7 @@ public class ExtractPerConfig :
                         {
                             Orderby = ["receivedDateTime ASC"],
                         },
-                        onTokenInfoUpdated: (serviceProvider, tokenInfo) =>
+                        onTokenInfoUpdated: (serviceProvider, tokenInfo, cancellationToken) =>
                         {
                             ConfigurationHelper.WriteUserSecrets<ExtractionConfig, Program>(config);
                             return Task.CompletedTask;
