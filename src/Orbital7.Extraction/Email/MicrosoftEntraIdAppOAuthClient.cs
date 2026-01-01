@@ -38,18 +38,19 @@ public class MicrosoftEntraIdAppOAuthClient :
             $"scope={SCOPES}";
     }
 
-    protected override List<KeyValuePair<string, string>> CreateGetTokenRequest()
+    protected override Task<List<KeyValuePair<string, string>>> CreateGetTokenRequestAsync()
     {
         ArgumentNullException.ThrowIfNull(this.TokenInfo.AuthorizationCode, nameof(this.TokenInfo.AuthorizationCode));
 
-        return [
+        return Task.FromResult(new List<KeyValuePair<string, string>>()
+        {
             new KeyValuePair<string, string>("client_id", _config.ClientId),
             new KeyValuePair<string, string>("scope", "https://graph.microsoft.com/.default"),
             new KeyValuePair<string, string>("code", this.TokenInfo.AuthorizationCode),
             new KeyValuePair<string, string>("redirect_uri", _config.RedirectUri),
             new KeyValuePair<string, string>("grant_type", "authorization_code"),
-            new KeyValuePair<string, string>("client_secret", _config.ClientSecret)
-        ];
+            new KeyValuePair<string, string>("client_secret", _config.ClientSecret),
+        });
     }
 
     protected override List<KeyValuePair<string, string>> CreateRefreshTokenRequest(
