@@ -8,12 +8,12 @@ namespace Orbital7.Extraction
     {
         public static IServiceCollection AddExtractionServices(
             this IServiceCollection services,
-            string? syncFusionLicenseKey)
+            string? syncfusionLicenseKey)
         {
             // Licensing.
-            if (syncFusionLicenseKey.HasText())
+            if (syncfusionLicenseKey.HasText())
             {
-                Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(syncFusionLicenseKey);
+                Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(syncfusionLicenseKey);
             }
 
             // Prerequisites.

@@ -3,18 +3,18 @@
 public static class ExtractionServicesFactory
 {
     public static IServiceCollection CreateServiceCollection(
-        string? syncFusionLicenseKey)
+        string? syncfusionLicenseKey)
     {
         var services = new ServiceCollection();
-        services.AddExtractionServices(syncFusionLicenseKey);
+        services.AddExtractionServices(syncfusionLicenseKey);
 
         return services;
     }
 
     public static IServiceProvider CreateServiceProvider(
-        string? syncFusionLicenseKey)
+        string? syncfusionLicenseKey)
     {
-        var services = CreateServiceCollection(syncFusionLicenseKey);
+        var services = CreateServiceCollection(syncfusionLicenseKey);
         return services.BuildServiceProvider();
     }
 }
