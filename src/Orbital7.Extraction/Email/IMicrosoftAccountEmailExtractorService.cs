@@ -24,7 +24,7 @@ public interface IMicrosoftAccountEmailExtractorService
         MicrosoftGraphMessagesQueryConfig queryConfig,
         Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null);
 
-    Task<List<MessageContent>> ExtractMessagesContentAsync(
+    Task<List<EmailMessage>> ExtractMessagesContentAsync(
         MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,

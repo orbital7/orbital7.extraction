@@ -54,18 +54,18 @@ public class MicrosoftAccountEmailExtractorService(
         return messages;
     }
 
-    public async Task<List<MessageContent>> ExtractMessagesContentAsync(
+    public async Task<List<EmailMessage>> ExtractMessagesContentAsync(
         MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
         MicrosoftGraphMessagesQueryConfig queryConfig,
         Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null)
     {
-        var messages = new List<MessageContent>();
+        var messages = new List<EmailMessage>();
 
         // Limit selection to only what we need.
         queryConfig.Select = ["sentdatetime", "sender", "subject", "body"];
-
+        
         await ExecuteMessagesFolderQueryAsync(
             appConfig,
             tokenInfo,
@@ -73,7 +73,7 @@ public class MicrosoftAccountEmailExtractorService(
             queryConfig,
             async (msg) => // Message iterator handler.
             {
-                var message = new MessageContent()
+                var message = new EmailMessage()
                 {
                     Id = msg.Id,
                     SentDateTimeUtc = msg.SentDateTime?.UtcDateTime,
@@ -108,7 +108,7 @@ public class MicrosoftAccountEmailExtractorService(
     }
 
     private void EmbedInlineImageAttachmentsIntoBody(
-        MessageContent message,
+        EmailMessage message,
         List<FileAttachment> attachments)
     {
         if (message.Body.HasText() && 

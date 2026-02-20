@@ -2,12 +2,16 @@
 
 namespace ScriptJobsConsole.Scripts;
 
-public class ExtractPerConfig :
+public class ExportEmailMessages :
     ScriptJobBase
 {
     public override async Task ExecuteAsync()
     {
-        var config = ExtractionConfig.Load<Program>();
+        // Load a configuration for email extraction (as an example here,
+        // we're just using user secrets, but this could be from anywhere).
+        var config = ConfigurationHelper.GetConfigurationWithUserSecrets<Config, Program>();
+
+        // Create the services.
         var serviceProvider = ExtractionServicesFactory.CreateServiceProvider(
             config.SyncfusionLicenseKey);
         var emailExtractorService = serviceProvider.GetRequiredService<IMicrosoftAccountEmailExtractorService>();
@@ -47,7 +51,7 @@ public class ExtractPerConfig :
                         },
                         onTokenInfoUpdated: (serviceProvider, tokenInfo, cancellationToken) =>
                         {
-                            ConfigurationHelper.WriteUserSecrets<ExtractionConfig, Program>(config);
+                            ConfigurationHelper.WriteUserSecrets<Config, Program>(config);
                             return Task.CompletedTask;
                         });
 
@@ -82,14 +86,14 @@ public class ExtractPerConfig :
         IPdfExportService pdfExportService,
         string exportFolderPath,
         string? outputFilename,
-        List<MessageContent> messages)
+        List<EmailMessage> messages)
     {
         var exportFilePath = Path.Combine(
             exportFolderPath,
             $"{outputFilename} [{DateTime.Now.ToFileSystemSafeDateString()}].pdf".Trim());
 
         await pdfExportService.ExportToPdfFileAsync(
-            new MessageContentPdfWriter(),
+            new EmailMessagePdfContentWriter(),
             messages,
             exportFilePath);
     }
@@ -97,7 +101,7 @@ public class ExtractPerConfig :
     private void ExportToCsv(
         string exportFolderPath,
         string? outputFilename,
-        List<MessageContent> messages)
+        List<EmailMessage> messages)
     {
         var exportFilePath = Path.Combine(
             exportFolderPath,
@@ -114,5 +118,16 @@ public class ExtractPerConfig :
                 message.SenderEmail);
         }
         File.WriteAllText(exportFilePath, sb.ToString());
+    }
+
+    public class Config
+    {
+        public string? SyncfusionLicenseKey { get; set; }
+
+        public MicrosoftEntraIdAppConfig EmailExtractionAppConfig { get; set; } = new();
+
+        public MicrosoftEntraIdAppTokenInfo EmailExtractionAppTokenInfo { get; set; } = new();
+
+        public List<EmailExtractionExportTarget> EmailExtractionTargets { get; set; } = new();
     }
 }

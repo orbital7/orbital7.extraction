@@ -1,6 +1,6 @@
 ﻿namespace Orbital7.Extraction.Email;
 
-public class MessageContent
+public class EmailMessage
 {
     public string? Id { get; set; }
 

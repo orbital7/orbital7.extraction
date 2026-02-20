@@ -6,18 +6,18 @@ using Syncfusion.Pdf.Graphics;
 
 namespace Orbital7.Extraction.Email;
 
-public class MessageContentPdfWriter :
-    IPdfContentWriter<MessageContent>
+public class EmailMessagePdfContentWriter :
+    IPdfContentWriter<EmailMessage>
 {
     public string GetContentTitle(
-        MessageContent contentItem)
+        EmailMessage contentItem)
     {
         return $"[{contentItem.SentDateTimeUtc?.ToLocalTime().ToDefaultDateTimeString()}] " +
             $"{contentItem.Subject}";
     }
 
     public Task<Stream> WriteContentAsync( 
-        MessageContent contentItem)
+        EmailMessage contentItem)
     {
         var htmlConverter = new HtmlToPdfConverter
         {
