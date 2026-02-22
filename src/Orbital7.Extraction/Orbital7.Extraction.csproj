@@ -1,18 +1,46 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-	<LangVersion>latest</LangVersion>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Version>10.0.0</Version>		
+		<Company>Orbital7</Company>
+		<Copyright>Copyright © 2025-2026 Orbital7</Copyright>
+		<Description>.NET Content Extraction Framework</Description>
+		<Authors>Josh van Eikeren</Authors>
+		<PackageProjectUrl>https://github.com/orbital7/orbital7.extraction</PackageProjectUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageIcon>Orbital7.png</PackageIcon>
+		<PackageReadmeFile>Readme.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/orbital7/orbital7.extraction</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Graph" Version="5.103.0" />
-    <PackageReference Include="Orbital7.Extensions" Version="10.0.5" />
-    <PackageReference Include="Orbital7.Extensions.Graphics" Version="10.0.0" />
-    <PackageReference Include="Syncfusion.HtmlToPdfConverter.Net.Windows" Version="32.2.5" />
-    <PackageReference Include="Syncfusion.Pdf.Net.Core" Version="32.2.5" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Graph" Version="5.103.0" />
+		<PackageReference Include="Orbital7.Extensions" Version="10.0.5" />
+		<PackageReference Include="Orbital7.Extensions.Graphics" Version="10.0.0" />
+		<PackageReference Include="Syncfusion.HtmlToPdfConverter.Net.Windows" Version="32.2.5" />
+		<PackageReference Include="Syncfusion.Pdf.Net.Core" Version="32.2.5" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="../../Orbital7.png">
+			<Pack>True</Pack>
+			<PackagePath>/</PackagePath>
+		</None>
+		<None Include="../../Readme.md">
+			<Pack>True</Pack>
+			<PackagePath>/</PackagePath>
+		</None>
+		<None Include="Licenses\THIRD-PARTY-NOTICES.md">
+			<Pack>True</Pack>
+			<PackagePath>licenses\</PackagePath>
+		</None>
+	</ItemGroup>
 
 </Project>
