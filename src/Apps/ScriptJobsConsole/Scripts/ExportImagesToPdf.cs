@@ -1,6 +1,7 @@
 ﻿using Orbital7.Extensions.Graphics;
 using Orbital7.Extraction.Images;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 
 namespace ScriptJobsConsole.Scripts;
 
@@ -20,7 +21,13 @@ public class ExportImagesToPdf :
 
         // Load the images.
         var images = await ImageSharpHelper.LoadImageFilesAsync(
-            config.InputImageFilePaths);
+            config.InputImagesFolderPath); // OR config.InputImageFilePaths
+
+        // Rotate the images as necessary.
+        //foreach (var image in images)
+        //{
+        //    image.Mutate(x => x.Rotate(RotateMode.Rotate90));
+        //}
 
         // Export the images to a PDF file.
         await pdfExportService.ExportToPdfFileAsync<Image>(
@@ -32,6 +39,10 @@ public class ExportImagesToPdf :
     public class Config
     {
         public string? SyncfusionLicenseKey { get; set; }
+
+        // TODO.
+        public string InputImagesFolderPath =>
+            @"C:\Temp\TestImages";
 
         // TODO.
         public string[] InputImageFilePaths =>
