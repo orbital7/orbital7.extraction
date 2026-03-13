@@ -1,5 +1,5 @@
 ﻿using Orbital7.Extraction.Email;
-using Orbital7.Extraction.Images;
+using Orbital7.Extraction.Images.BringATrailer;
 using Orbital7.Extraction.Pdf;
 
 namespace Orbital7.Extraction

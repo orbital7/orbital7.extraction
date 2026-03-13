@@ -1,8 +1,8 @@
 ﻿namespace Orbital7.Extraction.Email;
 
-public class EmailExtractionFolderTarget
+public record EmailExtractionFolderTarget
 {
-    public string? EmailAccountFolderPath { get; set; }
+    public string? EmailAccountFolderPath { get; init; }
 
-    public string? OutputFilename { get; set; }
+    public required string OutputFilename { get; init; }
 }

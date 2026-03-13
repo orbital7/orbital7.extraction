@@ -2,9 +2,9 @@
 
 public record MicrosoftEntraIdAppConfig
 {
-    public string ClientId { get; init; } = string.Empty;
+    public required string ClientId { get; init; }
 
-    public string ClientSecret { get; init; } = string.Empty;
+    public required string ClientSecret { get; init; }
 
-    public string RedirectUri { get; init; } = string.Empty;
+    public required string RedirectUri { get; init; }
 }

@@ -1,4 +1,4 @@
-﻿namespace Orbital7.Extraction.Images;
+﻿namespace Orbital7.Extraction.Images.BringATrailer;
 
 public interface IBringATrailerImageExtractorService
 {

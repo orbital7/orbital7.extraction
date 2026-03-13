@@ -1,11 +1,11 @@
 ﻿namespace Orbital7.Extraction.Email;
 
-public class MicrosoftEntraIdAppTokenInfo :
+public record MicrosoftEntraIdAppTokenInfo :
     TokenInfo
 {
     // This should be "common" for personal Microsoft accounts
     // or the tenant ID for work accounts.
-    public string? AccountLoginEndpoint { get; set; }
+    public required string AccountLoginEndpoint { get; set; } = "common";
 
     // This should be the code the the user received after 
     // authorizing the app (it will be in the redirect URL as the

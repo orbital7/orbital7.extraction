@@ -1,10 +1,10 @@
 ﻿namespace Orbital7.Extraction.Email;
 
-public class EmailExtractionExportTarget
+public record EmailExtractionExportTarget
 {
-    public List<EmailExportAction> ExportActions { get; set; } = new();
+    public List<EmailExportAction> ExportActions { get; init; } = new();
 
-    public string? ExportFolderPath { get; set; }
+    public required string ExportFolderPath { get; init; }
 
-    public List<EmailExtractionFolderTarget> ExtractionFolderTargets { get; set; } = new();
+    public List<EmailExtractionFolderTarget> ExtractionFolderTargets { get; init; } = new();
 }

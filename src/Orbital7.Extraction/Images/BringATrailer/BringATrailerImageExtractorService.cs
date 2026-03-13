@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace Orbital7.Extraction.Images;
+namespace Orbital7.Extraction.Images.BringATrailer;
 
 public class BringATrailerImageExtractorService(
     IHttpClientFactory httpClientFactory) :

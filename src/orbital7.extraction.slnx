@@ -2,5 +2,8 @@
   <Folder Name="/Apps/">
     <Project Path="Apps/ScriptJobsConsole/ScriptJobsConsole.csproj" />
   </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/Orbital7.Extraction.Tests/Orbital7.Extraction.Tests.csproj" Id="3488a5ed-ece1-4a39-a15a-6e17e32532ad" />
+  </Folder>
   <Project Path="Orbital7.Extraction/Orbital7.Extraction.csproj" />
 </Solution>

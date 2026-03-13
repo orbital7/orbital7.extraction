@@ -30,19 +30,26 @@ public class MicrosoftAccountEmailExtractorService(
         MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
-        MicrosoftGraphMessagesQueryConfig queryConfig,
+        MicrosoftGraphMessagesQuery query,
         Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null)
     {
         var messages = new List<(string?, string?)>();
 
         // Limit selection to only what we need.
-        queryConfig.Select = ["sender", "subject"];
+        var updatedQueryConfig = query.CloneIgnoringReferenceProperties(
+            overrides: new Dictionary<string, object?>
+            {
+                { 
+                    nameof(MicrosoftGraphMessagesQuery.Select), 
+                    new[] { "sender", "subject" } },
+            });
 
+        // Execute.
         await ExecuteMessagesFolderQueryAsync(
             appConfig,
             tokenInfo,
             folderPath,
-            queryConfig,
+            updatedQueryConfig,
             (msg) => // Message iterator handler.
             {
                 // Add the summary and keep going.
@@ -58,19 +65,26 @@ public class MicrosoftAccountEmailExtractorService(
         MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
-        MicrosoftGraphMessagesQueryConfig queryConfig,
+        MicrosoftGraphMessagesQuery query,
         Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null)
     {
         var messages = new List<EmailMessage>();
 
         // Limit selection to only what we need.
-        queryConfig.Select = ["sentdatetime", "sender", "subject", "body"];
+        var updatedQueryConfig = query.CloneIgnoringReferenceProperties(
+            overrides: new Dictionary<string, object?>
+            {
+                { 
+                    nameof(MicrosoftGraphMessagesQuery.Select),
+                    new[] { "sentdatetime", "sender", "subject", "body" }
+                },
+            });
         
         await ExecuteMessagesFolderQueryAsync(
             appConfig,
             tokenInfo,
             folderPath,
-            queryConfig,
+            query,
             async (msg) => // Message iterator handler.
             {
                 var message = new EmailMessage()
@@ -91,7 +105,7 @@ public class MicrosoftAccountEmailExtractorService(
 
                 // If configured, for HTML messages, extract the inline image attachments and
                 // embed them into the body.
-                if (queryConfig.DownloadAttachments && 
+                if (query.DownloadAttachments && 
                     message.BodyContentType == EmailBodyContentType.Html)
                 {
                     var attachments = await ExtractMessageFileAttachmentsAsync(appConfig, tokenInfo, msg.Id);
@@ -145,7 +159,7 @@ public class MicrosoftAccountEmailExtractorService(
         MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
-        MicrosoftGraphMessagesQueryConfig queryConfig,
+        MicrosoftGraphMessagesQuery query,
         Func<Message, Task<bool>> messageIteratorHandler,
         Func<Task<bool>>? pageIteratorPausedHandler = null,
         Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null)
@@ -161,16 +175,16 @@ public class MicrosoftAccountEmailExtractorService(
             .GetAsync(requestConfig =>
             {
                 // Set the request query parameters.
-                requestConfig.QueryParameters.Top = queryConfig.Top;
-                requestConfig.QueryParameters.Filter = queryConfig.Filter;
-                requestConfig.QueryParameters.Orderby = queryConfig.Orderby;
-                requestConfig.QueryParameters.Select = queryConfig.Select;
-                requestConfig.QueryParameters.Expand = queryConfig.Expand;
+                requestConfig.QueryParameters.Top = query.Top;
+                requestConfig.QueryParameters.Filter = query.Filter;
+                requestConfig.QueryParameters.Orderby = query.Orderby;
+                requestConfig.QueryParameters.Select = query.Select;
+                requestConfig.QueryParameters.Expand = query.Expand;
 
                 // Set the request headers.
-                if (queryConfig.Headers != null)
+                if (query.Headers != null)
                 {
-                    foreach (var header in queryConfig.Headers)
+                    foreach (var header in query.Headers)
                     {
                         requestConfig.Headers.Add(header.Item1, header.Item2);
                     }
@@ -192,8 +206,8 @@ public class MicrosoftAccountEmailExtractorService(
 
                         // Consider the maximum to determine whether we should continue.
                         if (shouldContinue && 
-                            queryConfig.Maximum.HasValue && 
-                            messagesCount >= queryConfig.Maximum)
+                            query.Maximum.HasValue && 
+                            messagesCount >= query.Maximum)
                         {
                             return false;
                         }
@@ -205,9 +219,9 @@ public class MicrosoftAccountEmailExtractorService(
                     (request) =>
                     {
                         // We have to re-add the headers.
-                        if (queryConfig.Headers != null)
+                        if (query.Headers != null)
                         {
-                            foreach (var header in queryConfig.Headers)
+                            foreach (var header in query.Headers)
                             {
                                 request.Headers.Add(header.Item1, header.Item2);
                             }
@@ -226,7 +240,7 @@ public class MicrosoftAccountEmailExtractorService(
                 bool shouldResume = true;
 
                 // Consider the maximum to determine whether we should resume.
-                if (queryConfig.Maximum.HasValue && messagesCount >= queryConfig.Maximum)
+                if (query.Maximum.HasValue && messagesCount >= query.Maximum)
                 {
                     shouldResume = false;
                 }

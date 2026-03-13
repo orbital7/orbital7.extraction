@@ -1,18 +1,18 @@
 ﻿namespace Orbital7.Extraction.Email;
 
-public class EmailMessage
+public record EmailMessage
 {
-    public string? Id { get; set; }
+    public string? Id { get; init; }
 
-    public DateTime? SentDateTimeUtc { get; set; }
+    public DateTime? SentDateTimeUtc { get; init; }
 
-    public string? SenderEmail { get; set; }
+    public string? SenderEmail { get; init; }
 
-    public string? SenderName { get; set; }
+    public string? SenderName { get; init; }
 
-    public string? Subject { get; set; }
+    public string? Subject { get; init; }
 
-    public EmailBodyContentType? BodyContentType { get; set; }
+    public EmailBodyContentType? BodyContentType { get; init; }
 
     public string? Body { get; set; }
 }

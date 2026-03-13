@@ -9,7 +9,7 @@ internal class Program
         ScriptJobBase? scriptJob = null;
 
         //scriptJob = new Scripts.ExtractEmailMessages();
-        scriptJob = new Scripts.ExportImagesToPdf();
+        scriptJob = new Scripts.ExportEmailMessages();
 
         await ScriptJobRunner.ExecuteAsync(
             scriptJob,

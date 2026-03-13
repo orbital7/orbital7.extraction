@@ -28,55 +28,52 @@ public class ExportEmailMessages :
         // Extract and export.
         foreach (var exportTarget in config.EmailExtractionTargets)
         {
-            if (exportTarget.ExportFolderPath.HasText())
+            // Ensure output folder exists.
+            FileSystemHelper.EnsureFolderExists(exportTarget.ExportFolderPath);
+
+            // Loop through the folder targets.
+            foreach (var folderTarget in exportTarget.ExtractionFolderTargets)
             {
-                // Ensure output folder exists.
-                FileSystemHelper.EnsureFolderExists(exportTarget.ExportFolderPath);
+                // Notify.
+                i++;
+                Console.Write($"Extracting Messages {i}/{total}: {folderTarget.EmailAccountFolderPath}...");
 
-                // Loop through the folder targets.
-                foreach (var folderTarget in exportTarget.ExtractionFolderTargets)
+                // Extract messages.
+                var messages = await emailExtractorService.ExtractMessagesContentAsync(
+                    config.EmailExtractionAppConfig,
+                    config.EmailExtractionAppTokenInfo,
+                    folderTarget.EmailAccountFolderPath,
+                    new MicrosoftGraphMessagesQuery()
+                    {
+                        Orderby = ["receivedDateTime ASC"],
+                    },
+                    onTokenInfoUpdated: (serviceProvider, tokenInfo, cancellationToken) =>
+                    {
+                        ConfigurationHelper.WriteUserSecrets<Config, Program>(config);
+                        return Task.CompletedTask;
+                    });
+
+                Console.WriteLine($"done ({messages.Count} extracted)");
+
+                // Export to PDF.
+                if (exportTarget.ExportActions.Contains(EmailExportAction.Pdf))
                 {
-                    // Notify.
-                    i++;
-                    Console.Write($"Extracting Messages {i}/{total}: {folderTarget.EmailAccountFolderPath}...");
+                    Console.Write($"Exporting to PDF {i}/{total}: {folderTarget.EmailAccountFolderPath}");
+                    await ExportToPdfAsync(
+                        serviceProvider.GetRequiredService<IPdfExportService>(),
+                        exportTarget.ExportFolderPath,
+                        folderTarget.OutputFilename,
+                        messages);
+                    Console.WriteLine("done");
+                }
 
-                    // Extract messages.
-                    var messages = await emailExtractorService.ExtractMessagesContentAsync(
-                        config.EmailExtractionAppConfig,
-                        config.EmailExtractionAppTokenInfo,
-                        folderTarget.EmailAccountFolderPath,
-                        new MicrosoftGraphMessagesQueryConfig()
-                        {
-                            Orderby = ["receivedDateTime ASC"],
-                        },
-                        onTokenInfoUpdated: (serviceProvider, tokenInfo, cancellationToken) =>
-                        {
-                            ConfigurationHelper.WriteUserSecrets<Config, Program>(config);
-                            return Task.CompletedTask;
-                        });
-
-                    Console.WriteLine($"done ({messages.Count} extracted)");
-
-                    // Export to PDF.
-                    if (exportTarget.ExportActions.Contains(EmailExportAction.Pdf))
-                    {
-                        Console.Write($"Exporting to PDF {i}/{total}: {folderTarget.EmailAccountFolderPath}");
-                        await ExportToPdfAsync(
-                            serviceProvider.GetRequiredService<IPdfExportService>(),
-                            exportTarget.ExportFolderPath,
-                            folderTarget.OutputFilename,
-                            messages);
-                        Console.WriteLine("done");
-                    }
-
-                    // Export to CSV.
-                    if (exportTarget.ExportActions.Contains(EmailExportAction.Csv))
-                    {
-                        // TODO: Encapsulate this in a service.
-                        ExportToCsv(exportTarget.ExportFolderPath,
-                            folderTarget.OutputFilename,
-                            messages);
-                    }
+                // Export to CSV.
+                if (exportTarget.ExportActions.Contains(EmailExportAction.Csv))
+                {
+                    // TODO: Encapsulate this in a service.
+                    ExportToCsv(exportTarget.ExportFolderPath,
+                        folderTarget.OutputFilename,
+                        messages);
                 }
             }
         }
@@ -85,7 +82,7 @@ public class ExportEmailMessages :
     private async Task ExportToPdfAsync(
         IPdfExportService pdfExportService,
         string exportFolderPath,
-        string? outputFilename,
+        string outputFilename,
         List<EmailMessage> messages)
     {
         var exportFilePath = Path.Combine(
@@ -100,7 +97,7 @@ public class ExportEmailMessages :
 
     private void ExportToCsv(
         string exportFolderPath,
-        string? outputFilename,
+        string outputFilename,
         List<EmailMessage> messages)
     {
         var exportFilePath = Path.Combine(
@@ -122,12 +119,12 @@ public class ExportEmailMessages :
 
     public class Config
     {
-        public string? SyncfusionLicenseKey { get; set; }
+        public required string SyncfusionLicenseKey { get; init; }
 
-        public MicrosoftEntraIdAppConfig EmailExtractionAppConfig { get; set; } = new();
+        public required MicrosoftEntraIdAppConfig EmailExtractionAppConfig { get; init; }
 
-        public MicrosoftEntraIdAppTokenInfo EmailExtractionAppTokenInfo { get; set; } = new();
+        public required MicrosoftEntraIdAppTokenInfo EmailExtractionAppTokenInfo { get; init; }
 
-        public List<EmailExtractionExportTarget> EmailExtractionTargets { get; set; } = new();
+        public required List<EmailExtractionExportTarget> EmailExtractionTargets { get; init; }
     }
 }

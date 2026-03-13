@@ -87,7 +87,7 @@ public class MicrosoftEntraIdAppOAuthClient :
     }
 
     private string GetOAuthTokenUrl(
-        string? accountLoginEndpoint)
+        string accountLoginEndpoint)
     {
         return $"{GetOAuthUrl(accountLoginEndpoint)}/token";
     }

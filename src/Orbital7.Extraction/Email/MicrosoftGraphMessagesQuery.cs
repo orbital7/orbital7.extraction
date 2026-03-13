@@ -1,6 +1,6 @@
 ﻿namespace Orbital7.Extraction.Email;
 
-public class MicrosoftGraphMessagesQueryConfig
+public record MicrosoftGraphMessagesQuery
 {
     public int? Top { get; set; } = 100;
 
