@@ -13,7 +13,22 @@ public class EmailExtractionTests(
     private readonly ExtractionServicesFixture _fixture = fixture;
 
     [Fact]
-    public async Task ExtractEmailMessagesAsync()
+    public void GetAuthorizationUrl()
+    {
+        var emailExtractorService = _fixture
+            .ServiceProvider
+            .GetRequiredService<IMicrosoftAccountEmailExtractorService>();
+
+        string authUrl = emailExtractorService.GetAuthorizationUrl(
+            _fixture.Config.EmailExtractionAppConfig,
+            _fixture.Config.EmailExtractionAppTokenInfo);
+
+        Assert.True(authUrl.HasText());
+        Assert.StartsWith("https://", authUrl);
+    }
+
+    [Fact]
+    public async Task ExtractMessagesAsync()
     {
         var emailExtractorService = _fixture
             .ServiceProvider
@@ -22,12 +37,13 @@ public class EmailExtractionTests(
         // Ensure output folder exists.
         FileSystemHelper.EnsureFolderExists(
             _fixture.Config.EmailExtractionTarget.ExportFolderPath);
+        Assert.True(_fixture.Config.EmailExtractionTarget.ExportActions.Count > 0);
 
         // Loop through the folder targets.
         foreach (var folderTarget in _fixture.Config.EmailExtractionTarget.ExtractionFolderTargets)
         {
             // Extract messages.
-            var messages = await emailExtractorService.ExtractMessagesContentAsync(
+            var messages = await emailExtractorService.ExtractMessagesAsync(
                 _fixture.Config.EmailExtractionAppConfig,
                 _fixture.Config.EmailExtractionAppTokenInfo,
                 folderTarget.EmailAccountFolderPath,
@@ -36,6 +52,15 @@ public class EmailExtractionTests(
                     Orderby = ["receivedDateTime ASC"],
                 },
                 onTokenInfoUpdated: SaveUserSecretsAsync);
+            Assert.True(messages.Count > 0);
+
+            // Validate.
+            foreach (var message in messages)
+            {
+                ValidateEmailMetadata(message);
+                Assert.True(message.Body.HasText());
+                Assert.Equal(EmailBodyContentType.Html, message.BodyContentType);
+            }
             
             // Export to PDF.
             if (_fixture.Config.EmailExtractionTarget.ExportActions.Contains(EmailExportAction.Pdf))
@@ -72,17 +97,17 @@ public class EmailExtractionTests(
     }
 
     [Fact]
-    public async Task ExtractEmailHeaders()
+    public async Task ExtractMetadataAsync()
     {
         var emailExtractorService = _fixture
             .ServiceProvider
             .GetRequiredService<IMicrosoftAccountEmailExtractorService>();
-        
+
         // Loop through the folder targets.
         foreach (var folderTarget in _fixture.Config.EmailExtractionTarget.ExtractionFolderTargets)
         {
-            // Extract messages.
-            var messages = await emailExtractorService.ExtractMessagesSenderSubjectAsync(
+            // Extract all messages.
+            var allEmails = await emailExtractorService.ExtractMetadataAsync(
                 _fixture.Config.EmailExtractionAppConfig,
                 _fixture.Config.EmailExtractionAppTokenInfo,
                 folderTarget.EmailAccountFolderPath,
@@ -91,7 +116,43 @@ public class EmailExtractionTests(
                     Orderby = ["receivedDateTime ASC"],
                 },
                 onTokenInfoUpdated: SaveUserSecretsAsync);
+
+            // Ensure content.
+            Assert.True(allEmails.Count > 0);
+            foreach (var email in allEmails)
+            {
+                ValidateEmailMetadata(email);
+            }
+
+            // Extract unread messages.
+            var unreadEmails = await emailExtractorService.ExtractMetadataAsync(
+                _fixture.Config.EmailExtractionAppConfig,
+                _fixture.Config.EmailExtractionAppTokenInfo,
+                folderTarget.EmailAccountFolderPath,
+                new MicrosoftGraphMessagesQuery()
+                {
+                    Filter = "isRead eq false",
+                    Orderby = ["receivedDateTime ASC"],
+                },
+                onTokenInfoUpdated: SaveUserSecretsAsync);
+
+            // Ensure unread messages are a subset of all messages.
+            Assert.True(unreadEmails.Count > 0);
+            Assert.True(unreadEmails.Count < allEmails.Count);
+            foreach (var message in unreadEmails)
+            {
+                Assert.Contains(message, allEmails);
+            }
         }
+    }
+
+    private void ValidateEmailMetadata(
+        EmailMetadata metadata)
+    {
+        Assert.True(metadata.SenderEmail.HasText());
+        Assert.Contains("@", metadata.SenderEmail);
+        Assert.EndsWith(".net", metadata.SenderEmail);
+        Assert.True(metadata.Subject.HasText());
     }
 
     private Task SaveUserSecretsAsync(

@@ -17,14 +17,14 @@ public interface IMicrosoftAccountEmailExtractorService
         Func<Task<bool>>? pageIteratorHandler = null,
         Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null);
 
-    Task<List<(string?, string?)>> ExtractMessagesSenderSubjectAsync(
+    Task<List<EmailMetadata>> ExtractMetadataAsync(
         MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
         MicrosoftGraphMessagesQuery query,
         Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null);
 
-    Task<List<EmailMessage>> ExtractMessagesContentAsync(
+    Task<List<EmailMessage>> ExtractMessagesAsync(
         MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,

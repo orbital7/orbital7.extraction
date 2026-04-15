@@ -39,7 +39,7 @@ public class ExportEmailMessages :
                 Console.Write($"Extracting Messages {i}/{total}: {folderTarget.EmailAccountFolderPath}...");
 
                 // Extract messages.
-                var messages = await emailExtractorService.ExtractMessagesContentAsync(
+                var messages = await emailExtractorService.ExtractMessagesAsync(
                     config.EmailExtractionAppConfig,
                     config.EmailExtractionAppTokenInfo,
                     folderTarget.EmailAccountFolderPath,

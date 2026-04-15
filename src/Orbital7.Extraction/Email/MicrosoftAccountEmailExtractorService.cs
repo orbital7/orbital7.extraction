@@ -26,14 +26,14 @@ public class MicrosoftAccountEmailExtractorService(
         return client.GetAuthorizationUrl();
     }
 
-    public async Task<List<(string?, string?)>> ExtractMessagesSenderSubjectAsync(
+    public async Task<List<EmailMetadata>> ExtractMetadataAsync(
         MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
         MicrosoftGraphMessagesQuery query,
         Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null)
     {
-        var messages = new List<(string?, string?)>();
+        var messages = new List<EmailMetadata>();
 
         // Limit selection to only what we need.
         var updatedQueryConfig = query.CloneIgnoringReferenceProperties(
@@ -53,7 +53,7 @@ public class MicrosoftAccountEmailExtractorService(
             (msg) => // Message iterator handler.
             {
                 // Add the summary and keep going.
-                messages.Add((msg.Sender?.EmailAddress?.Address, msg.Subject));
+                messages.Add(msg.ToEmailMetadata<EmailMetadata>());
                 return Task.FromResult(true);
             },
             onTokenInfoUpdated: onTokenInfoUpdated);
@@ -61,7 +61,7 @@ public class MicrosoftAccountEmailExtractorService(
         return messages;
     }
 
-    public async Task<List<EmailMessage>> ExtractMessagesContentAsync(
+    public async Task<List<EmailMessage>> ExtractMessagesAsync(
         MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
@@ -87,21 +87,14 @@ public class MicrosoftAccountEmailExtractorService(
             query,
             async (msg) => // Message iterator handler.
             {
-                var message = new EmailMessage()
-                {
-                    Id = msg.Id,
-                    SentDateTimeUtc = msg.SentDateTime?.UtcDateTime,
-                    SenderName = msg.Sender?.EmailAddress?.Name,
-                    SenderEmail = msg.Sender?.EmailAddress?.Address,
-                    Subject = msg.Subject,
-                    Body = msg.Body?.Content,
-                    BodyContentType = 
-                        msg.Body != null ?
-                            msg.Body?.ContentType == BodyType.Html ?
-                                EmailBodyContentType.Html :
-                                EmailBodyContentType.Text :
-                            null,
-                };
+                var message = msg.ToEmailMetadata<EmailMessage>();
+                message.Body = msg.Body?.Content;
+                message.BodyContentType =
+                    msg.Body != null ?
+                        msg.Body?.ContentType == BodyType.Html ?
+                            EmailBodyContentType.Html :
+                            EmailBodyContentType.Text :
+                        null;
 
                 // If configured, for HTML messages, extract the inline image attachments and
                 // embed them into the body.
