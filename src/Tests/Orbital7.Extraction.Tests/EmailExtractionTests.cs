@@ -1,6 +1,6 @@
-﻿using System.Text;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Orbital7.Extensions;
+using Orbital7.Extraction.Csv;
 using Orbital7.Extraction.Email;
 using Orbital7.Extraction.Pdf;
 
@@ -47,10 +47,7 @@ public class EmailExtractionTests(
                 _fixture.Config.EmailExtractionAppConfig,
                 _fixture.Config.EmailExtractionAppTokenInfo,
                 folderTarget.EmailAccountFolderPath,
-                new MicrosoftGraphMessagesQuery()
-                {
-                    Orderby = ["receivedDateTime ASC"],
-                },
+                new EmailExtractionQuery(),
                 onTokenInfoUpdated: SaveUserSecretsAsync);
             Assert.True(messages.Count > 0);
 
@@ -81,10 +78,11 @@ public class EmailExtractionTests(
             // Export to CSV.
             if (_fixture.Config.EmailExtractionTarget.ExportActions.Contains(EmailExportAction.Csv))
             {
-                // TODO: Encapsulate this in a service.
-                string filePath = ExportToCsv(_fixture.Config.EmailExtractionTarget.ExportFolderPath,
+                string filePath = ExportToCsv(
+                    _fixture.ServiceProvider.GetRequiredService<ICsvExportService>(),
+                    _fixture.Config.EmailExtractionTarget.ExportFolderPath,
                     folderTarget.OutputFilename,
-                    messages);
+                    messages.ToList<EmailMetadata>());
                 
                 Assert.EndsWith(".csv", filePath);
                 Assert.True(File.Exists(filePath));
@@ -111,10 +109,7 @@ public class EmailExtractionTests(
                 _fixture.Config.EmailExtractionAppConfig,
                 _fixture.Config.EmailExtractionAppTokenInfo,
                 folderTarget.EmailAccountFolderPath,
-                new MicrosoftGraphMessagesQuery()
-                {
-                    Orderby = ["receivedDateTime ASC"],
-                },
+                new EmailExtractionQuery(),
                 onTokenInfoUpdated: SaveUserSecretsAsync);
 
             // Ensure content.
@@ -129,10 +124,10 @@ public class EmailExtractionTests(
                 _fixture.Config.EmailExtractionAppConfig,
                 _fixture.Config.EmailExtractionAppTokenInfo,
                 folderTarget.EmailAccountFolderPath,
-                new MicrosoftGraphMessagesQuery()
+                new EmailExtractionQuery()
                 {
-                    Filter = "isRead eq false",
-                    Orderby = ["receivedDateTime ASC"],
+                    Filter = EmailExtractionQuery.FILTER_UNREAD,
+                    Orderby = [EmailExtractionQuery.ORDERING_RECEIVED_DATE_TIME_ASC],
                 },
                 onTokenInfoUpdated: SaveUserSecretsAsync);
 
@@ -187,27 +182,20 @@ public class EmailExtractionTests(
     }
 
     private string ExportToCsv(
+        ICsvExportService csvExportService,
         string exportFolderPath,
         string outputFilename,
-        List<EmailMessage> messages)
+        List<EmailMetadata> emails)
     {
         var exportFilePath = Path.Combine(
             exportFolderPath,
             $"{outputFilename}.csv");
         FileSystemHelper.DeleteFile(exportFilePath);
 
-        var sb = new StringBuilder();
-        sb.AppendCommaSeparatedValuesLine("SentDateTime", "Subject", "SenderName", "SenderEmail");
-        foreach (var message in messages)
-        {
-            sb.AppendCommaSeparatedValuesLine(
-                message.SentDateTimeUtc?.ToLocalTime().ToDefaultDateTimeString(),
-                message.Subject.EncloseInQuotes(),
-                message.SenderName.EncloseInQuotes(),
-                message.SenderEmail);
-        }
-
-        File.WriteAllText(exportFilePath, sb.ToString());
+        csvExportService.ExportToCsvFile(
+            new EmailMetadataCsvContentWriter(),
+            emails,
+            exportFilePath);
 
         return exportFilePath;
     }

@@ -9,7 +9,7 @@ public class PdfExportService :
 {
     public async Task ExportToPdfFileAsync<T>(
         IPdfContentWriter<T> pdfContentWriter,
-        List<T> contentItems,
+        IList<T> contentItems,
         string exportFilePath)
     {
         using (PdfDocument pdfDocument = new PdfDocument())

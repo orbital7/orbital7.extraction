@@ -4,6 +4,6 @@ public interface IPdfExportService
 {
     Task ExportToPdfFileAsync<T>(
         IPdfContentWriter<T> pdfContentWriter,
-        List<T> contentItems,
+        IList<T> contentItems,
         string exportFilePath);
 }

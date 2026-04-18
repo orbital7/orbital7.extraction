@@ -1,14 +1,19 @@
 ﻿namespace Orbital7.Extraction.Email;
 
-public record MicrosoftGraphMessagesQuery
+public record EmailExtractionQuery
 {
+    public const string ORDERING_RECEIVED_DATE_TIME_ASC = "receivedDateTime ASC";
+    public const string ORDERING_RECEIVED_DATE_TIME_DESC = "receivedDateTime DESC";
+    public const string FILTER_UNREAD = "isRead eq false";
+    public const string FILTER_READ = "isRead eq true";
+
     public int? Top { get; set; } = 100;
 
     public int? Maximum { get; set; }
 
     public string? Filter { get; set; }
 
-    public string[]? Orderby { get; set; } = ["receivedDateTime DESC"];
+    public string[]? Orderby { get; set; } = [ORDERING_RECEIVED_DATE_TIME_DESC];
 
     public string[]? Select { get; set; }
 

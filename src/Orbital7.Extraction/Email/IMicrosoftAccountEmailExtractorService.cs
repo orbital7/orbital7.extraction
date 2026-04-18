@@ -12,7 +12,7 @@ public interface IMicrosoftAccountEmailExtractorService
         MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
-        MicrosoftGraphMessagesQuery query,
+        EmailExtractionQuery query,
         Func<Message, Task<bool>> messageIteratorHandler,
         Func<Task<bool>>? pageIteratorHandler = null,
         Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null);
@@ -21,14 +21,14 @@ public interface IMicrosoftAccountEmailExtractorService
         MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
-        MicrosoftGraphMessagesQuery query,
+        EmailExtractionQuery query,
         Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null);
 
     Task<List<EmailMessage>> ExtractMessagesAsync(
         MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
-        MicrosoftGraphMessagesQuery query,
+        EmailExtractionQuery query,
         Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null);
 
     Task<List<FileAttachment>> ExtractMessageFileAttachmentsAsync(

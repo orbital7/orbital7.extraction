@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using Orbital7.Extraction.Csv;
+using System.Text;
 
 namespace ScriptJobsConsole.Scripts;
 
@@ -43,9 +44,9 @@ public class ExportEmailMessages :
                     config.EmailExtractionAppConfig,
                     config.EmailExtractionAppTokenInfo,
                     folderTarget.EmailAccountFolderPath,
-                    new MicrosoftGraphMessagesQuery()
+                    new EmailExtractionQuery()
                     {
-                        Orderby = ["receivedDateTime ASC"],
+                        Orderby = [EmailExtractionQuery.ORDERING_RECEIVED_DATE_TIME_ASC],
                     },
                     onTokenInfoUpdated: (serviceProvider, tokenInfo, cancellationToken) =>
                     {
@@ -70,10 +71,16 @@ public class ExportEmailMessages :
                 // Export to CSV.
                 if (exportTarget.ExportActions.Contains(EmailExportAction.Csv))
                 {
-                    // TODO: Encapsulate this in a service.
-                    ExportToCsv(exportTarget.ExportFolderPath,
+                    Console.Write($"Exporting to CSV {i}/{total}: {folderTarget.EmailAccountFolderPath}");
+                    var exportFilePath = Path.Combine(
+                        exportTarget.ExportFolderPath,
+                        $"{folderTarget.OutputFilename} [{DateTime.Now.ToFileSystemSafeDateString()}].csv".Trim());
+                    ExportToCsv(
+                        serviceProvider.GetRequiredService<ICsvExportService>(),
+                        exportTarget.ExportFolderPath,
                         folderTarget.OutputFilename,
-                        messages);
+                        messages.ToList<EmailMetadata>());
+                    Console.WriteLine("done");
                 }
             }
         }
@@ -83,7 +90,7 @@ public class ExportEmailMessages :
         IPdfExportService pdfExportService,
         string exportFolderPath,
         string outputFilename,
-        List<EmailMessage> messages)
+        List<EmailMessage> emails)
     {
         var exportFilePath = Path.Combine(
             exportFolderPath,
@@ -91,30 +98,24 @@ public class ExportEmailMessages :
 
         await pdfExportService.ExportToPdfFileAsync(
             new EmailMessagePdfContentWriter(),
-            messages,
+            emails,
             exportFilePath);
     }
 
     private void ExportToCsv(
+        ICsvExportService csvExportService,
         string exportFolderPath,
         string outputFilename,
-        List<EmailMessage> messages)
+        List<EmailMetadata> emails)
     {
         var exportFilePath = Path.Combine(
             exportFolderPath,
             $"{outputFilename} [{DateTime.Now.ToFileSystemSafeDateString()}].csv".Trim());
 
-        var sb = new StringBuilder();
-        sb.AppendCommaSeparatedValuesLine("SentDateTime", "Subject", "SenderName", "SenderEmail");
-        foreach (var message in messages)
-        {
-            sb.AppendCommaSeparatedValuesLine(
-                message.SentDateTimeUtc?.ToLocalTime().ToDefaultDateTimeString(),
-                message.Subject.EncloseInQuotes(),
-                message.SenderName.EncloseInQuotes(),
-                message.SenderEmail);
-        }
-        File.WriteAllText(exportFilePath, sb.ToString());
+        csvExportService.ExportToCsvFile(
+            new EmailMetadataCsvContentWriter(),
+            emails,
+            exportFilePath);
     }
 
     public class Config

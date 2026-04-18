@@ -30,7 +30,7 @@ public class MicrosoftAccountEmailExtractorService(
         MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
-        MicrosoftGraphMessagesQuery query,
+        EmailExtractionQuery query,
         Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null)
     {
         var messages = new List<EmailMetadata>();
@@ -40,7 +40,7 @@ public class MicrosoftAccountEmailExtractorService(
             overrides: new Dictionary<string, object?>
             {
                 { 
-                    nameof(MicrosoftGraphMessagesQuery.Select), 
+                    nameof(EmailExtractionQuery.Select), 
                     new[] { "sender", "subject" } },
             });
 
@@ -65,7 +65,7 @@ public class MicrosoftAccountEmailExtractorService(
         MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
-        MicrosoftGraphMessagesQuery query,
+        EmailExtractionQuery query,
         Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null)
     {
         var messages = new List<EmailMessage>();
@@ -75,7 +75,7 @@ public class MicrosoftAccountEmailExtractorService(
             overrides: new Dictionary<string, object?>
             {
                 { 
-                    nameof(MicrosoftGraphMessagesQuery.Select),
+                    nameof(EmailExtractionQuery.Select),
                     new[] { "sentdatetime", "sender", "subject", "body" }
                 },
             });
@@ -152,7 +152,7 @@ public class MicrosoftAccountEmailExtractorService(
         MicrosoftEntraIdAppConfig appConfig,
         MicrosoftEntraIdAppTokenInfo tokenInfo,
         string? folderPath,
-        MicrosoftGraphMessagesQuery query,
+        EmailExtractionQuery query,
         Func<Message, Task<bool>> messageIteratorHandler,
         Func<Task<bool>>? pageIteratorPausedHandler = null,
         Func<IServiceProvider, MicrosoftEntraIdAppTokenInfo, CancellationToken, Task>? onTokenInfoUpdated = null)

@@ -1,4 +1,5 @@
-﻿using Orbital7.Extraction.Email;
+﻿using Orbital7.Extraction.Csv;
+using Orbital7.Extraction.Email;
 using Orbital7.Extraction.Images.BringATrailer;
 using Orbital7.Extraction.Pdf;
 
@@ -19,15 +20,18 @@ namespace Orbital7.Extraction
             // Prerequisites.
             services.AddHttpClient();
 
+            // Csv.
+            services.AddSingleton<ICsvExportService, CsvExportService>();
+
             // Email.
-            services.AddScoped<IMicrosoftAccountEmailExtractorService, MicrosoftAccountEmailExtractorService>();
+            services.AddSingleton<IMicrosoftAccountEmailExtractorService, MicrosoftAccountEmailExtractorService>();
 
             // Images.
-            services.AddScoped<IBringATrailerImageExtractorService, BringATrailerImageExtractorService>();
+            services.AddSingleton<IBringATrailerImageExtractorService, BringATrailerImageExtractorService>();
 
             // Pdf.
-            services.AddScoped<IPdfExportService, PdfExportService>();
-            services.AddScoped<IPdfExtractorService, PdfExtractorService>();
+            services.AddSingleton<IPdfExportService, PdfExportService>();
+            services.AddSingleton<IPdfExtractorService, PdfExtractorService>();
 
             return services;
         }
